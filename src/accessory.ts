@@ -55,7 +55,7 @@ let hap: HAP;
  */
 export = (api: API) => {
   hap = api.hap;
-  api.registerAccessory("Led-strip", LedLight);
+  api.registerAccessory("RGBWW-LED-Controller", LedLight);
 };
 
 class LedLight implements AccessoryPlugin {

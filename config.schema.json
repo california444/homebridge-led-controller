@@ -1,0 +1,24 @@
+{
+    "pluginAlias": "RGBWW-LED-Controller",
+    "pluginType": "accessory",
+    "singular": false,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string",
+          "required": true
+        },
+        "hostName": {
+            "title": "IP Address / Hostname",
+            "type": "string",
+            "required": true,
+            "description": "IP address of the led controller",
+            "format": "hostname"
+          }
+      }
+    },
+    "form": null,
+    "display": null
+  }
