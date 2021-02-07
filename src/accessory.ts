@@ -55,7 +55,7 @@ let hap: HAP;
  */
 export = (api: API) => {
   hap = api.hap;
-  api.registerAccessory("RGBWW-LED-Controller", LedLight);
+  api.registerAccessory("homebridge-rgbww-led-controller", "RGBWW-LED-Controller", LedLight);
 };
 
 class LedLight implements AccessoryPlugin {
