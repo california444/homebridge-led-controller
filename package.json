@@ -1,6 +1,7 @@
 {
   "name": "homebridge-rgbww-led-controller",
-  "version": "1.1.4",
+  "displayName": "Homebridge RGBWW LED Controller Plugin",
+  "version": "1.1.6",
   "description": "Homebridge Plugin for ESP RGBWW LED Controller",
   "main": "dist/accessory.js",
   "scripts": {
@@ -20,11 +21,14 @@
   "license": "ISC",
   "files": [
     "LICENSE",
-    "dist"
+    "dist",
+    "config.schema.json",
+    "package.json",
+    "Readme.md"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/california444/homebridge-led-controller.git"
+    "url": "git://github.com/california444/homebridge-led-controller.git"
   },
   "bugs": {
     "url": "https://github.com/california444/homebridge-led-controller/issues"
