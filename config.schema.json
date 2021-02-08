@@ -8,15 +8,17 @@
         "name": {
           "title": "Name",
           "type": "string",
-          "required": true
+          "required": true,
+          "default": "LED-Strip"
         },
         "hostName": {
             "title": "IP Address / Hostname",
             "type": "string",
             "required": true,
             "description": "IP address of the led controller",
-            "format": "hostname"
+            "default": "192.168.0.100"
           }
       }
     }
   }
+  

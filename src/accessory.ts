@@ -50,12 +50,15 @@ let currentHsvState: hsvData = {h:0, s:0, v:0, ct:2700};
 
 let hap: HAP;
 
+const PLUGIN_NAME = 'homebridge-rgbww-led-controller';
+const ACCESSORY_NAME = 'RGBWW-LED-Controller';
+
 /*
  * Initializer function called when the plugin is loaded.
  */
 export = (api: API) => {
   hap = api.hap;
-  api.registerAccessory("homebridge-rgbww-led-controller", "RGBWW-LED-Controller", LedLight);
+  api.registerAccessory(PLUGIN_NAME, ACCESSORY_NAME, LedLight);
 };
 
 class LedLight implements AccessoryPlugin {
@@ -137,11 +140,11 @@ class LedLight implements AccessoryPlugin {
 
     this.informationService = new hap.Service.AccessoryInformation()
       .setCharacteristic(hap.Characteristic.Manufacturer, "Selbstbau")
-      .setCharacteristic(hap.Characteristic.Model, "ESP RGBWW Wifi Led Controller");
+      .setCharacteristic(hap.Characteristic.Model, "RGBWW Wifi Led Controller");
 
       const timer = setInterval(() => {
         this.getUpdate();
-      }, 5000);
+      }, 1000*60);
 
     log.info("Switch finished initializing!");
   }
@@ -217,7 +220,7 @@ class LedLight implements AccessoryPlugin {
    * Typical this only ever happens at the pairing process.
    */
   identify(): void {
-    this.log("Identify!");
+    this.log("Identify!"+ACCESSORY_NAME);
   }
 
   /*
@@ -230,5 +233,4 @@ class LedLight implements AccessoryPlugin {
       this.ledService,
     ];
   }
-
 }
