@@ -52,7 +52,7 @@ let hap: HAP;
 
 const PLUGIN_NAME = 'homebridge-rgbww-led-controller';
 const ACCESSORY_NAME = 'RGBWW-LED-Controller';
-
+const version = require('../package.json').version; 
 /*
  * Initializer function called when the plugin is loaded.
  */
@@ -140,7 +140,8 @@ class LedLight implements AccessoryPlugin {
 
     this.informationService = new hap.Service.AccessoryInformation()
       .setCharacteristic(hap.Characteristic.Manufacturer, "Selbstbau")
-      .setCharacteristic(hap.Characteristic.Model, "RGBWW Wifi Led Controller");
+      .setCharacteristic(hap.Characteristic.Model, "RGBWW Wifi Led Controller")
+      .setCharacteristic(hap.Characteristic.SoftwareRevision, version);
 
       const timer = setInterval(() => {
         this.getUpdate();
@@ -149,70 +150,86 @@ class LedLight implements AccessoryPlugin {
     log.info("Switch finished initializing!");
   }
 
-  cycleUpdate(): void {
-    
-  }
-
   sendUpdate(): void {
 
-    const req = request(
-      {
-        host: this.host,
-        path: '/color',
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json;charset=utf-8'
+    let req;
+    try {
+      req = request(
+        {
+          host: this.host,
+          path: '/color',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json;charset=utf-8'
+          }
+        },
+        
+        response => {
+          let result;
+          const chunks: any = [];
+          response.on('data', (chunk) => {
+            chunks.push(chunk);
+          });
+          response.on('end', () => {
+            result = Buffer.concat(chunks).toString();
+            this.log.debug("received result in post:"+result);
+          });
         }
-      },
-      
-      response => {
-        let result;
-        const chunks: any = [];
-        response.on('data', (chunk) => {
-          chunks.push(chunk);
-        });
-        response.on('end', () => {
-          result = Buffer.concat(chunks).toString();
-          this.log.debug("received result in post:"+result);
-        });
-      }
-    );
-    let requestData :requestObject = {hsv: currentHsvState, cmd:"fade", t:600};
+      );
+      let requestData :requestObject = {hsv: currentHsvState, cmd:"fade", t:600};
+  
+      this.log.debug("sending req:" +JSON.stringify(requestData));
+      req.write(JSON.stringify(requestData));
 
-    this.log.debug("sending req:" +JSON.stringify(requestData));
-    req.write(JSON.stringify(requestData));
-    req.end();
+    } catch(err) {
+      this.log.error(err);
+    }
+    try {
+      if(req) req.end();
+    } catch(err) {
+      this.log.error(err);
+    }  
   }
 
   getUpdate(): void {
     let result: any;
-    const req = request(
-      {
-        host: this.host,
-        path: '/color',
-        method: 'GET',
-      },
-      response => {
-        const chunks: any = [];
-        response.on('data', (chunk) => {
-          chunks.push(chunk);
-        });
-        response.on('end', () => {
-          result = Buffer.concat(chunks).toString();
-          this.log.debug("received result in get: " + result);
-          if(result) {
-            let obj : getUpdate = JSON.parse(result);
-            currentHsvState = obj.hsv;
-            this.ledService.updateCharacteristic(hap.Characteristic.On, currentHsvState.v > 0 ? true : false);
-            this.ledService.updateCharacteristic(hap.Characteristic.Brightness, currentHsvState.v as number);
-            this.ledService.updateCharacteristic(hap.Characteristic.Saturation, currentHsvState.s as number);
-            this.ledService.updateCharacteristic(hap.Characteristic.ColorTemperature, currentHsvState.ct as number);
-            this.ledService.updateCharacteristic(hap.Characteristic.Hue, currentHsvState.h as number);
-          }
-        });
-      }
-    );
-    req.end();
+    let req;
+
+    try {
+      req = request(
+        {
+          host: this.host,
+          path: '/color',
+          method: 'GET',
+        },
+        response => {
+          const chunks: any = [];
+          response.on('data', (chunk) => {
+            chunks.push(chunk);
+          });
+          response.on('end', () => {
+            result = Buffer.concat(chunks).toString();
+            this.log.debug("received result in get: " + result);
+            if(result) {
+              let obj : getUpdate = JSON.parse(result);
+              currentHsvState = obj.hsv;
+              this.ledService.updateCharacteristic(hap.Characteristic.On, currentHsvState.v > 0 ? true : false);
+              this.ledService.updateCharacteristic(hap.Characteristic.Brightness, currentHsvState.v as number);
+              this.ledService.updateCharacteristic(hap.Characteristic.Saturation, currentHsvState.s as number);
+              this.ledService.updateCharacteristic(hap.Characteristic.ColorTemperature, currentHsvState.ct as number);
+              this.ledService.updateCharacteristic(hap.Characteristic.Hue, currentHsvState.h as number);
+            }
+          });
+        }
+      );
+    } catch(err) {
+      this.log.error(err);
+    }
+    try {
+      if(req) req.end();
+    } catch(err) {
+      this.log.error(err);
+    }
   }
 
   /*
