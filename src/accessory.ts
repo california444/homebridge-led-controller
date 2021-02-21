@@ -166,6 +166,10 @@ class LedLight implements AccessoryPlugin {
         'Content-Type': 'application/json;charset=utf-8'
       }
     }
+    let requestData :requestObject = {hsv: currentHsvState, cmd:"fade", t:600};
+  
+    this.log.debug("sending req:" +JSON.stringify(requestData));
+    //req.write();
 
     request(options, response => {
       let result;
@@ -181,53 +185,11 @@ class LedLight implements AccessoryPlugin {
     .on("error", (err) => {
       this.log.error(err.message);
     })
-    .end();
-
-
-    /*
-    try {
-      req = request(
-        {
-          host: this.host,
-          path: '/color',
-          method: 'POST',
-          //timeout: 5000,
-          headers: {
-            'Content-Type': 'application/json;charset=utf-8'
-          }
-        },
-        
-        response => {
-          let result;
-          const chunks: any = [];
-          response.on('data', (chunk) => {
-            chunks.push(chunk);
-          });
-          response.on('end', () => {
-            result = Buffer.concat(chunks).toString();
-            this.log.debug("received result in post:"+result);
-          });
-        }
-      );
-      let requestData :requestObject = {hsv: currentHsvState, cmd:"fade", t:600};
-  
-      this.log.debug("sending req:" +JSON.stringify(requestData));
-      req.write(JSON.stringify(requestData));
-
-    } catch(err) {
-      this.log.error(err);
-    }
-    try {
-      if(req) req.end();
-    } catch(err) {
-      this.log.error(err);
-    }
-    */  
+    .end(JSON.stringify(requestData));
   }
 
   getUpdate(): void {
     let result: any;
-    //let req;
 
     let options = {
       host: this.host,
@@ -239,6 +201,7 @@ class LedLight implements AccessoryPlugin {
     request(options, response => {
       const chunks: any = [];
       response.on('data', (chunk) => {
+        this.log.debug("get data: "+chunk);
         chunks.push(chunk);
       });
       response.on('end', () => {
@@ -247,6 +210,7 @@ class LedLight implements AccessoryPlugin {
         if(result) {
           let obj : getUpdate = JSON.parse(result);
           currentHsvState = obj.hsv;
+          currentHsvState.ct = 1000000/currentHsvState.ct;
           this.ledService.updateCharacteristic(hap.Characteristic.On, currentHsvState.v > 0 ? true : false);
           this.ledService.updateCharacteristic(hap.Characteristic.Brightness, currentHsvState.v as number);
           this.ledService.updateCharacteristic(hap.Characteristic.Saturation, currentHsvState.s as number);
@@ -259,43 +223,6 @@ class LedLight implements AccessoryPlugin {
       this.log.error(err.message);
     })
     .end();
-/*
-    try {
-      req = request(
-        {
-          host: this.host,
-          path: '/color',
-          method: 'GET',
-        },
-        response => {
-          const chunks: any = [];
-          response.on('data', (chunk) => {
-            chunks.push(chunk);
-          });
-          response.on('end', () => {
-            result = Buffer.concat(chunks).toString();
-            this.log.debug("received result in get: " + result);
-            if(result) {
-              let obj : getUpdate = JSON.parse(result);
-              currentHsvState = obj.hsv;
-              this.ledService.updateCharacteristic(hap.Characteristic.On, currentHsvState.v > 0 ? true : false);
-              this.ledService.updateCharacteristic(hap.Characteristic.Brightness, currentHsvState.v as number);
-              this.ledService.updateCharacteristic(hap.Characteristic.Saturation, currentHsvState.s as number);
-              this.ledService.updateCharacteristic(hap.Characteristic.ColorTemperature, currentHsvState.ct as number);
-              this.ledService.updateCharacteristic(hap.Characteristic.Hue, currentHsvState.h as number);
-            }
-          });
-        }
-      );
-    } catch(err) {
-      this.log.error(err);
-    }
-    try {
-      if(req) req.end();
-    } catch(err) {
-      this.log.error(err);
-    }
-    */
   }
 
   /*
