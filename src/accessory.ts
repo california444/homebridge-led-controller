@@ -114,8 +114,7 @@ class LedLight implements AccessoryPlugin {
     this.ledService.getCharacteristic(hap.Characteristic.ColorTemperature)
     .on(CharacteristicEventTypes.GET, (callback: CharacteristicGetCallback) => {
       let ct = currentHsvState.ct as number;
-      let m = 1000000/ct;
-      callback(undefined, m);
+      callback(undefined, 1000000/ct);
       
     })
     .on(CharacteristicEventTypes.SET, (value: CharacteristicValue, callback: CharacteristicSetCallback) => {
@@ -149,6 +148,8 @@ class LedLight implements AccessoryPlugin {
       const timer = setInterval(() => {
         this.getUpdate();
       }, 1000*60);
+
+      this.getUpdate();
 
     log.info("Finished initializing!");
   }
@@ -210,11 +211,11 @@ class LedLight implements AccessoryPlugin {
         if(result) {
           let obj : getUpdate = JSON.parse(result);
           currentHsvState = obj.hsv;
-          currentHsvState.ct = 1000000/currentHsvState.ct;
+          //currentHsvState.ct = 1000000/currentHsvState.ct;
           this.ledService.updateCharacteristic(hap.Characteristic.On, currentHsvState.v > 0 ? true : false);
           this.ledService.updateCharacteristic(hap.Characteristic.Brightness, currentHsvState.v as number);
           this.ledService.updateCharacteristic(hap.Characteristic.Saturation, currentHsvState.s as number);
-          this.ledService.updateCharacteristic(hap.Characteristic.ColorTemperature, currentHsvState.ct as number);
+          this.ledService.updateCharacteristic(hap.Characteristic.ColorTemperature, 1000000/currentHsvState.ct as number);
           this.ledService.updateCharacteristic(hap.Characteristic.Hue, currentHsvState.h as number);
         }
       });
