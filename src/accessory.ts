@@ -46,8 +46,6 @@ interface getUpdate {
   hsv: hsvData;
 }
 
-let currentHsvState: hsvData = {h:0, s:0, v:0, ct:2700};
-
 let hap: HAP;
 
 const PLUGIN_NAME = 'homebridge-rgbww-led-controller';
@@ -62,6 +60,8 @@ export = (api: API) => {
 };
 
 class LedLight implements AccessoryPlugin {
+
+  private currentHsvState: hsvData = {h:0, s:0, v:0, ct:2700};
 
   private readonly log: Logging;
   private readonly name: string;
@@ -79,47 +79,47 @@ class LedLight implements AccessoryPlugin {
 
     this.ledService.getCharacteristic(hap.Characteristic.Hue)
     .on(CharacteristicEventTypes.GET, (callback: CharacteristicGetCallback) => {
-      let hue = currentHsvState.h as number;
+      let hue = this.currentHsvState.h as number;
       callback(undefined, hue);
     })
     .on(CharacteristicEventTypes.SET, (value: CharacteristicValue, callback: CharacteristicSetCallback) => {
-      currentHsvState.h = value as number;
+      this.currentHsvState.h = value as number;
       this.sendUpdate();
       callback();
     });
 
     this.ledService.getCharacteristic(hap.Characteristic.Saturation)
     .on(CharacteristicEventTypes.GET, (callback: CharacteristicGetCallback) => {
-      let sat = currentHsvState.s as number;
+      let sat = this.currentHsvState.s as number;
       callback(undefined, sat);
     })
     .on(CharacteristicEventTypes.SET, (value: CharacteristicValue, callback: CharacteristicSetCallback) => {
-      currentHsvState.s = value as number;
+      this.currentHsvState.s = value as number;
       this.sendUpdate();
       callback();
     });
 
     this.ledService.getCharacteristic(hap.Characteristic.Brightness)
     .on(CharacteristicEventTypes.GET, (callback: CharacteristicGetCallback) => {
-      let brightness = currentHsvState.v as number;
+      let brightness = this.currentHsvState.v as number;
       callback(undefined, brightness);
       
     })
     .on(CharacteristicEventTypes.SET, (value: CharacteristicValue, callback: CharacteristicSetCallback) => {
-      currentHsvState.v = value as number;
+      this.currentHsvState.v = value as number;
       this.sendUpdate();
       callback();
     });
 
     this.ledService.getCharacteristic(hap.Characteristic.ColorTemperature)
     .on(CharacteristicEventTypes.GET, (callback: CharacteristicGetCallback) => {
-      let ct = currentHsvState.ct as number;
+      let ct = this.currentHsvState.ct as number;
       callback(undefined, 1000000/ct);
       
     })
     .on(CharacteristicEventTypes.SET, (value: CharacteristicValue, callback: CharacteristicSetCallback) => {
       let m = value as number;
-      currentHsvState.ct = 1000000/m;
+      this.currentHsvState.ct = 1000000/m;
 
       this.sendUpdate();
       callback();
@@ -128,13 +128,12 @@ class LedLight implements AccessoryPlugin {
     this.ledService.getCharacteristic(hap.Characteristic.On) 
       .on(CharacteristicEventTypes.GET, (callback: CharacteristicGetCallback) => {
 
-        //this.getUpdate();
-        let state: boolean = currentHsvState.v > 0 ? true : false;
-        callback(undefined, state);
+        this.log.debug("requested ON GET: %d", this.currentHsvState.v > 0 ? 1:0);
+        callback(undefined, this.currentHsvState.v > 0 ? 1:0);
 
       })
       .on(CharacteristicEventTypes.SET, (value: CharacteristicValue, callback: CharacteristicSetCallback) => {
-        currentHsvState.v = value as boolean ? 100 :0;
+        this.currentHsvState.v = (value == 1) ? 100 :0;
         this.sendUpdate();
 
         callback();
@@ -167,7 +166,7 @@ class LedLight implements AccessoryPlugin {
         'Content-Type': 'application/json;charset=utf-8'
       }
     }
-    let requestData :requestObject = {hsv: currentHsvState, cmd:"fade", t:600};
+    let requestData :requestObject = {hsv: this.currentHsvState, cmd:"fade", t:600};
   
     this.log.debug("sending req:" +JSON.stringify(requestData));
     //req.write();
@@ -209,13 +208,14 @@ class LedLight implements AccessoryPlugin {
         this.log.debug("received result in get: " + result);
         if(result) {
           let obj : getUpdate = JSON.parse(result);
-          currentHsvState = obj.hsv;
-          //currentHsvState.ct = 1000000/currentHsvState.ct;
-          this.ledService.updateCharacteristic(hap.Characteristic.On, currentHsvState.v > 0 ? true : false);
-          this.ledService.updateCharacteristic(hap.Characteristic.Brightness, currentHsvState.v as number);
-          this.ledService.updateCharacteristic(hap.Characteristic.Saturation, currentHsvState.s as number);
-          this.ledService.updateCharacteristic(hap.Characteristic.ColorTemperature, currentHsvState.ct == 0 ? 140: 1000000/currentHsvState.ct as number);
-          this.ledService.updateCharacteristic(hap.Characteristic.Hue, currentHsvState.h as number);
+          this.currentHsvState = obj.hsv;
+          if(this.currentHsvState.ct == 0) this.currentHsvState.ct = 2700;
+      
+          this.ledService.updateCharacteristic(hap.Characteristic.Brightness, this.currentHsvState.v as number);
+          this.ledService.updateCharacteristic(hap.Characteristic.Saturation, this.currentHsvState.s as number);
+          this.ledService.updateCharacteristic(hap.Characteristic.ColorTemperature, 1000000/this.currentHsvState.ct as number);
+          this.ledService.updateCharacteristic(hap.Characteristic.Hue, this.currentHsvState.h as number);
+          this.ledService.updateCharacteristic(hap.Characteristic.On, this.currentHsvState.v > 0 ? 1 : 0);
         }
       });
     })
