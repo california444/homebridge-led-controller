@@ -147,7 +147,7 @@ class LedLight implements AccessoryPlugin {
 
       const timer = setInterval(() => {
         this.getUpdate();
-      }, 1000*60);
+      }, 1000*60*3);
 
       this.getUpdate();
 
@@ -202,7 +202,6 @@ class LedLight implements AccessoryPlugin {
     request(options, response => {
       const chunks: any = [];
       response.on('data', (chunk) => {
-        this.log.debug("get data: "+chunk);
         chunks.push(chunk);
       });
       response.on('end', () => {
@@ -215,7 +214,7 @@ class LedLight implements AccessoryPlugin {
           this.ledService.updateCharacteristic(hap.Characteristic.On, currentHsvState.v > 0 ? true : false);
           this.ledService.updateCharacteristic(hap.Characteristic.Brightness, currentHsvState.v as number);
           this.ledService.updateCharacteristic(hap.Characteristic.Saturation, currentHsvState.s as number);
-          this.ledService.updateCharacteristic(hap.Characteristic.ColorTemperature, 1000000/currentHsvState.ct as number);
+          this.ledService.updateCharacteristic(hap.Characteristic.ColorTemperature, currentHsvState.ct == 0 ? 140: 1000000/currentHsvState.ct as number);
           this.ledService.updateCharacteristic(hap.Characteristic.Hue, currentHsvState.h as number);
         }
       });
