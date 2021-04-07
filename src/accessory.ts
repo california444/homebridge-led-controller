@@ -87,8 +87,10 @@ class LedLight implements AccessoryPlugin {
       callback(undefined, hue);
     })
     .on(CharacteristicEventTypes.SET, (value: CharacteristicValue, callback: CharacteristicSetCallback) => {
-      this.currentHsvState.h = value as number;
-      this.sendUpdate();
+      if(this.currentHsvState.h != value as number) {
+        this.currentHsvState.h = value as number;
+        this.sendUpdate();
+      }
       callback();
     });
 
@@ -98,8 +100,10 @@ class LedLight implements AccessoryPlugin {
       callback(undefined, sat);
     })
     .on(CharacteristicEventTypes.SET, (value: CharacteristicValue, callback: CharacteristicSetCallback) => {
-      this.currentHsvState.s = value as number;
-      this.sendUpdate();
+      if(this.currentHsvState.s != value as number) {
+        this.currentHsvState.s = value as number;
+        this.sendUpdate();
+      }
       callback();
     });
 
@@ -110,8 +114,10 @@ class LedLight implements AccessoryPlugin {
       
     })
     .on(CharacteristicEventTypes.SET, (value: CharacteristicValue, callback: CharacteristicSetCallback) => {
-      this.currentHsvState.v = value as number;
-      this.sendUpdate();
+      if(this.currentHsvState.v != value as number) {
+        this.currentHsvState.v = value as number;
+        this.sendUpdate();
+      }
       callback();
     });
 
@@ -123,9 +129,10 @@ class LedLight implements AccessoryPlugin {
     })
     .on(CharacteristicEventTypes.SET, (value: CharacteristicValue, callback: CharacteristicSetCallback) => {
       let m = value as number;
-      this.currentHsvState.ct = 1000000/m;
-
-      this.sendUpdate();
+      if(this.currentHsvState.ct != 1000000/m) {
+        this.currentHsvState.ct = 1000000/m;
+        this.sendUpdate();
+      }
       callback();
     });
 
@@ -134,9 +141,10 @@ class LedLight implements AccessoryPlugin {
         callback(undefined, this.currentHsvState.v > 0 ? 1:0);
       })
       .on(CharacteristicEventTypes.SET, (value: CharacteristicValue, callback: CharacteristicSetCallback) => {
-        this.currentHsvState.v = (value == 1) ? 100 :0;
-        this.sendUpdate();
-
+        if(this.currentHsvState.v != ((value == 1) ? 100 :0)) {
+          this.currentHsvState.v = (value == 1) ? 100 :0;
+          this.sendUpdate();
+        }
         callback();
       });
 
@@ -173,7 +181,7 @@ class LedLight implements AccessoryPlugin {
     }
     let requestData :requestObject = {hsv: this.currentHsvState, cmd:"fade", t:600};
   
-    this.log.info("Sending request: " +JSON.stringify(requestData));
+    this.log.debug("Sending request: " +JSON.stringify(requestData));
 
     request(options, response => {
       let result;
@@ -183,14 +191,16 @@ class LedLight implements AccessoryPlugin {
       });
       response.on('end', () => {
         result = Buffer.concat(chunks).toString();
-        this.log.info("Received result: "+result);
+        this.log.info("Set result: "+result);
       });
     })
     .on("error", (err) => {
-      this.log.error(err.message);
-      throw new this.api.hap.HapStatusError(this.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+      this.log.error("Set error: "+ err.message);
+      this.ledService.getCharacteristic(hap.Characteristic.On)
+      .updateValue(new this.api.hap.HapStatusError(this.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE));
     })
     .end(JSON.stringify(requestData));
+    this.getUpdate();
   }
 
   getUpdate(): void {
@@ -226,7 +236,8 @@ class LedLight implements AccessoryPlugin {
     })
     .on("error", (err) => {
       this.log.error(err.message);
-      throw new this.api.hap.HapStatusError(this.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
+      this.ledService.getCharacteristic(hap.Characteristic.On)
+      .updateValue(new this.api.hap.HapStatusError(this.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE));
     })
     .end();
   }
