@@ -10,6 +10,7 @@ import {
   AccessoryConfig,
   AccessoryPlugin,
   API,
+  APIEvent,
   CharacteristicEventTypes,
   CharacteristicGetCallback,
   CharacteristicSetCallback,
@@ -66,6 +67,8 @@ class LedLight implements AccessoryPlugin {
   private readonly log: Logging;
   private readonly name: string;
   private host: string;
+  private timer: NodeJS.Timeout;
+  private api:API;
 
   private readonly ledService: Service;
   private readonly informationService: Service;
@@ -74,6 +77,7 @@ class LedLight implements AccessoryPlugin {
     this.log = log;
     this.name = config.name;
     this.host = config.hostName;
+    this.api = api;
 
     this.ledService = new hap.Service.Lightbulb(this.name);
 
@@ -127,10 +131,7 @@ class LedLight implements AccessoryPlugin {
 
     this.ledService.getCharacteristic(hap.Characteristic.On) 
       .on(CharacteristicEventTypes.GET, (callback: CharacteristicGetCallback) => {
-
-        this.log.debug("requested ON GET: %d", this.currentHsvState.v > 0 ? 1:0);
         callback(undefined, this.currentHsvState.v > 0 ? 1:0);
-
       })
       .on(CharacteristicEventTypes.SET, (value: CharacteristicValue, callback: CharacteristicSetCallback) => {
         this.currentHsvState.v = (value == 1) ? 100 :0;
@@ -144,19 +145,23 @@ class LedLight implements AccessoryPlugin {
       .setCharacteristic(hap.Characteristic.Model, "RGBWW Wifi Led Controller")
       .setCharacteristic(hap.Characteristic.SoftwareRevision, version);
 
-      const timer = setInterval(() => {
+       this.timer = setInterval(() => {
         this.getUpdate();
-      }, 1000*60*3);
+      }, 1000*60*5);
+
+      api.on(APIEvent.SHUTDOWN, this.shutdown.bind(this));
 
       this.getUpdate();
-
+    
     log.info("Finished initializing!");
   }
 
+  shutdown(): void {
+    this.log.info("Shutdown");
+    clearTimeout(this.timer);
+  }
+
   sendUpdate(): void {
-
-    //let req;
-
     let options = {
       host: this.host,
       path: '/color',
@@ -168,8 +173,7 @@ class LedLight implements AccessoryPlugin {
     }
     let requestData :requestObject = {hsv: this.currentHsvState, cmd:"fade", t:600};
   
-    this.log.debug("sending req:" +JSON.stringify(requestData));
-    //req.write();
+    this.log.info("Sending request: " +JSON.stringify(requestData));
 
     request(options, response => {
       let result;
@@ -179,11 +183,12 @@ class LedLight implements AccessoryPlugin {
       });
       response.on('end', () => {
         result = Buffer.concat(chunks).toString();
-        this.log.debug("received result in post:"+result);
+        this.log.info("Received result: "+result);
       });
     })
     .on("error", (err) => {
       this.log.error(err.message);
+      throw new this.api.hap.HapStatusError(this.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
     })
     .end(JSON.stringify(requestData));
   }
@@ -205,7 +210,7 @@ class LedLight implements AccessoryPlugin {
       });
       response.on('end', () => {
         result = Buffer.concat(chunks).toString();
-        this.log.debug("received result in get: " + result);
+        this.log.info("Cyclic status poll: " + result);
         if(result) {
           let obj : getUpdate = JSON.parse(result);
           this.currentHsvState = obj.hsv;
@@ -221,6 +226,7 @@ class LedLight implements AccessoryPlugin {
     })
     .on("error", (err) => {
       this.log.error(err.message);
+      throw new this.api.hap.HapStatusError(this.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
     })
     .end();
   }
