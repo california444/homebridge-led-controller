@@ -62,6 +62,8 @@ export = (api: API) => {
 
 class LedLight implements AccessoryPlugin {
 
+  private updateIntervalMinutes:number = 30;
+
   private currentHsvState: hsvData = {h:0, s:0, v:0, ct:2700};
 
   private readonly log: Logging;
@@ -111,7 +113,6 @@ class LedLight implements AccessoryPlugin {
     .on(CharacteristicEventTypes.GET, (callback: CharacteristicGetCallback) => {
       let brightness = this.currentHsvState.v as number;
       callback(undefined, brightness);
-      
     })
     .on(CharacteristicEventTypes.SET, (value: CharacteristicValue, callback: CharacteristicSetCallback) => {
       if(this.currentHsvState.v != value as number) {
@@ -155,7 +156,7 @@ class LedLight implements AccessoryPlugin {
 
        this.timer = setInterval(() => {
         this.getUpdate();
-      }, 1000*60*5);
+      }, 1000*60*this.updateIntervalMinutes);
 
       api.on(APIEvent.SHUTDOWN, this.shutdown.bind(this));
 
@@ -200,7 +201,9 @@ class LedLight implements AccessoryPlugin {
       .updateValue(new this.api.hap.HapStatusError(this.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE));
     })
     .end(JSON.stringify(requestData));
-    this.getUpdate();
+    setTimeout(() => {
+      this.getUpdate();
+    }, 1000);
   }
 
   getUpdate(): void {
@@ -220,7 +223,7 @@ class LedLight implements AccessoryPlugin {
       });
       response.on('end', () => {
         result = Buffer.concat(chunks).toString();
-        this.log.info("Cyclic status poll: " + result);
+        this.log.debug("Cyclic status poll: " + result);
         if(result) {
           let obj : getUpdate = JSON.parse(result);
           this.currentHsvState = obj.hsv;
