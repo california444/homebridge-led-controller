@@ -13,7 +13,8 @@
   },
   "author": "Roman Schlich",
   "engines": {
-    "homebridge": ">=1.0.0"
+    "homebridge": ">=1.0.0",
+    "node": ">=14.0.0"
   },
   "keywords": [
     "homebridge-plugin"
