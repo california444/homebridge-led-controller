@@ -38,7 +38,7 @@
     "@types/node": "^26.6.6",
     "homebridge": "^2.5.0",
     "rimraf": "^6.1.2",
-    "typescript": "^6.0.3"
+    "typescript": "^7.0.2"
   },
   "homepage": "https://github.com/california444/homebridge-led-controller#readme"
 }
